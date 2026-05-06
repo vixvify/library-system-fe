@@ -25,6 +25,9 @@ export default function AdminPage() {
   const [books, setBooks] = useState<IBook[]>([]);
   const [isLoadingBooks, setIsLoadingBooks] = useState(true);
   const [deletingBookId, setDeletingBookId] = useState<string | null>(null);
+  const [editingBookId, setEditingBookId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [updatingBookId, setUpdatingBookId] = useState<string | null>(null);
 
   const {
     register,
@@ -118,6 +121,50 @@ export default function AdminPage() {
     }
   };
 
+  const handleStartEdit = (book: IBook) => {
+    setEditingBookId(book.id);
+    setEditingTitle(book.title);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingBookId(null);
+    setEditingTitle("");
+  };
+
+  const handleUpdateTitle = async (book: IBook) => {
+    const nextTitle = editingTitle.trim();
+
+    if (!nextTitle) {
+      showSnackbar("Title is required", "error");
+      return;
+    }
+
+    if (nextTitle === book.title) {
+      handleCancelEdit();
+      return;
+    }
+
+    const previousBooks = books;
+    setUpdatingBookId(book.id);
+    setBooks((prev) =>
+      prev.map((item) =>
+        item.id === book.id ? { ...item, title: nextTitle } : item,
+      ),
+    );
+
+    try {
+      await bookService.updateBookTitle(book.id, { title: nextTitle });
+      showSnackbar("Book title updated successfully", "success");
+      handleCancelEdit();
+      router.refresh();
+    } catch (error) {
+      setBooks(previousBooks);
+      showSnackbar(handleError(error), "error");
+    } finally {
+      setUpdatingBookId(null);
+    }
+  };
+
   const handleSnackbarClose = (
     _event?: SyntheticEvent | Event,
     reason?: string,
@@ -137,7 +184,7 @@ export default function AdminPage() {
             <div className="mb-8">
               <h1 className="text-2xl font-semibold">Admin</h1>
               <p className="mt-1 text-sm text-gray-500">
-                Add books and remove existing entries
+                Add books, edit titles, and remove existing entries
               </p>
             </div>
 
@@ -263,22 +310,68 @@ export default function AdminPage() {
                             {book.available ? "Available" : "Borrowed"}
                           </span>
                         </div>
-                        <h3 className="mt-2 wrap-break-word text-base font-medium text-white">
-                          {book.title}
-                        </h3>
+                        {editingBookId === book.id ? (
+                          <input
+                            type="text"
+                            value={editingTitle}
+                            onChange={(event) =>
+                              setEditingTitle(event.target.value)
+                            }
+                            disabled={updatingBookId === book.id}
+                            autoFocus
+                            className="mt-2 w-full rounded-xl bg-white/5 px-3 py-2 text-base font-medium text-white ring-1 ring-white/10 outline-none placeholder:text-gray-500 focus:ring-white/20 disabled:cursor-wait"
+                          />
+                        ) : (
+                          <h3 className="mt-2 wrap-break-word text-base font-medium text-white">
+                            {book.title}
+                          </h3>
+                        )}
                         <p className="mt-1 text-xs text-gray-500">
                           Borrowed {book.borrow_days} days
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(book)}
-                        disabled={deletingBookId === book.id}
-                        className="rounded-xl cursor-pointer bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 ring-1 ring-red-400/20 transition hover:bg-red-500/20 disabled:cursor-wait disabled:text-red-300/50 sm:w-24"
-                      >
-                        {deletingBookId === book.id ? "Deleting..." : "Delete"}
-                      </button>
+                      {editingBookId === book.id ? (
+                        <div className="flex gap-2 sm:shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTitle(book)}
+                            disabled={updatingBookId === book.id}
+                            className="w-full cursor-pointer rounded-xl bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-300 ring-1 ring-emerald-400/20 transition hover:bg-emerald-500/20 disabled:cursor-wait disabled:text-emerald-300/50 sm:w-20"
+                          >
+                            {updatingBookId === book.id ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelEdit}
+                            disabled={updatingBookId === book.id}
+                            className="w-full cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-gray-300 ring-1 ring-white/10 transition hover:bg-white/20 disabled:cursor-wait disabled:text-gray-300/50 sm:w-20"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2 sm:shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleStartEdit(book)}
+                            disabled={deletingBookId === book.id}
+                            className="w-full cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-gray-300 ring-1 ring-white/10 transition hover:bg-white/20 disabled:cursor-wait disabled:text-gray-300/50 sm:w-20"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(book)}
+                            disabled={deletingBookId === book.id}
+                            className="w-full cursor-pointer rounded-xl bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 ring-1 ring-red-400/20 transition hover:bg-red-500/20 disabled:cursor-wait disabled:text-red-300/50 sm:w-24"
+                          >
+                            {deletingBookId === book.id
+                              ? "Deleting..."
+                              : "Delete"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { IBook } from "@/core/domain/book";
+import { getStudentIdAlert } from "@/core/constants/sweet-alert";
+import Swal from "sweetalert2";
 
 export default function BookCard({
   book,
@@ -13,22 +15,35 @@ export default function BookCard({
   handleReturn: (bookId: string) => Promise<void>;
 }) {
   const [loading, setLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"borrow" | "return" | null>(
+    null,
+  );
 
   const onAction = async () => {
+    const action = book.available ? "borrow" : "return";
+    const result = await Swal.fire(getStudentIdAlert(action));
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
     try {
       setLoading(true);
-      if (book.available) {
+      setPendingAction(action);
+      if (action === "borrow") {
         await handleBorrow(book.id);
       } else {
         await handleReturn(book.id);
       }
     } finally {
       setLoading(false);
+      setPendingAction(null);
     }
   };
 
   const actionLabel = book.available ? "Borrow Book" : "Return Book";
-  const loadingLabel = book.available ? "Borrowing..." : "Returning...";
+  const loadingLabel =
+    pendingAction === "borrow" ? "Borrowing..." : "Returning...";
 
   return (
     <div

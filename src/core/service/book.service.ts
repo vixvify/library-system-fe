@@ -1,4 +1,4 @@
-import { ICreateBook, IBook } from "../domain/book";
+import { ICreateBook, IBook, IUpdateBookTitle } from "../domain/book";
 import { IBookRepository } from "../ports/book.repository";
 
 export class BookService {
@@ -10,6 +10,13 @@ export class BookService {
   }
   async createBook(book: ICreateBook): Promise<IBook> {
     const response = await this.bookRepository.createBook(book);
+    return response.data;
+  }
+  async updateBookTitle(
+    bookId: string,
+    book: IUpdateBookTitle,
+  ): Promise<IBook> {
+    const response = await this.bookRepository.updateBookTitle(bookId, book);
     return response.data;
   }
   async borrowBook(bookId: string): Promise<IBook> {

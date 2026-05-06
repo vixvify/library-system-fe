@@ -11,3 +11,7 @@ export interface ICreateBook {
   title: string;
   type: "EBOOK" | "PRINTED";
 }
+
+export interface IUpdateBookTitle {
+  title: string;
+}

@@ -1,7 +1,7 @@
 import http from "@/lib/http";
 import { ApiResponse } from "../interface/response";
 import { IBookRepository } from "@/core/ports/book.repository";
-import { ICreateBook, IBook } from "@/core/domain/book";
+import { ICreateBook, IBook, IUpdateBookTitle } from "@/core/domain/book";
 
 export class BookRepository implements IBookRepository {
   async getAllBooks(): Promise<ApiResponse<IBook[]>> {
@@ -11,6 +11,16 @@ export class BookRepository implements IBookRepository {
   async createBook(book: ICreateBook): Promise<ApiResponse<IBook>> {
     const response = await http.post<ApiResponse<IBook>>(
       "/api/library/books",
+      book,
+    );
+    return response.data;
+  }
+  async updateBookTitle(
+    bookId: string,
+    book: IUpdateBookTitle,
+  ): Promise<ApiResponse<IBook>> {
+    const response = await http.patch<ApiResponse<IBook>>(
+      `/api/library/books/${bookId}`,
       book,
     );
     return response.data;
